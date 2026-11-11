@@ -262,7 +262,8 @@
   async function addRecipe(item){
     if(mode==="cloud"&&client){
       const {data,error}=await client.from("recipes").insert(item).select().single();
-      if(error) throw error; return data;
+      if(error) throw error;
+      recipes.unshift(data); save(); return data;
     }
     item.id=Date.now(); item.created_at=new Date().toISOString();
     recipes.push(item); save(); return item;
@@ -286,7 +287,10 @@
     if(mode==="cloud"&&client){
       const {data,error}=await client.from("orders")
         .upsert({date:entry.date,meal:entry.meal,person:entry.person,items:entry.items},{onConflict:"date,meal,person"}).select().single();
-      if(error) throw error; return data;
+      if(error) throw error;
+      const i=orders.findIndex(o=>o.date===data.date&&o.meal===data.meal&&String(o.person||"")===String(data.person||""));
+      if(i>=0) orders[i]=data; else orders.unshift(data);
+      save(); return data;
     }
     const i=orders.findIndex(o=>o.date===entry.date&&o.meal===entry.meal&&(o.person||"")===(entry.person||""));
     const obj={id:Date.now(),date:entry.date,meal:entry.meal,person:entry.person,items:entry.items,created_at:new Date().toISOString()};
